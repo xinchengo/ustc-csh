@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { PlusIcon, ArrowPathIcon, ArrowDownRightIcon, ClockIcon, TrophyIcon } from "@heroicons/react/24/solid";
 
 interface Course {
   id: number;
@@ -23,19 +24,25 @@ function mergeInterchangeable(substitution: Substitution[]): Substitution[] {
   // A -> B and B -> A
   // Merge them into a single interchangeable rule
   const substitutionMap = new Map<string, Substitution>();
-  
-  for(const sub of substitution) {
+
+  for (const sub of substitution) {
     // Sort the course IDs to create a unique key
-    const keyOriginal = sub.originalCourses.map((course) => course.id).sort().join(",");
-    const keySubstitute = sub.substituteCourses.map((course) => course.id).sort().join(",");
+    const keyOriginal = sub.originalCourses
+      .map((course) => course.id)
+      .sort()
+      .join(",");
+    const keySubstitute = sub.substituteCourses
+      .map((course) => course.id)
+      .sort()
+      .join(",");
     let key: string;
-    if(keyOriginal < keySubstitute) {
+    if (keyOriginal < keySubstitute) {
       key = keyOriginal + "," + keySubstitute;
-    } else { 
+    } else {
       key = keySubstitute + "," + keyOriginal;
     }
     // If the key already exists, mark it as interchangeable
-    if(substitutionMap.has(key)) {
+    if (substitutionMap.has(key)) {
       const existing = substitutionMap.get(key)!;
       existing.interchangeable = true;
     } else {
@@ -49,22 +56,22 @@ function mergeInterchangeable(substitution: Substitution[]): Substitution[] {
 function Course({ course }: { course: Course }) {
   return (
     // a box with sky blue background
-    <div className="border rounded shadow bg-sky-100 p-2 min-w-fit">
-      <p className="text-md text-center font-light text-black">
-        {course.code}
-      </p>
-      <p className="text-xl text-center font-bold text-blue-900">
+    <div className="rounded shadow bg-sky-100 dark:bg-sky-900 p-2 min-w-40">
+      <p className="text-md text-center font-light text-black dark:text-white">{course.code}</p>
+      <p className="text-xl text-center font-bold text-nowrap text-blue-900 dark:text-blue-200">
         {course.cn}
       </p>
       {/* div with left right layout */}
-      <div className="grid grid-flow-col justify-center gap-2">
-        <div className="border rounded-full shadow bg-gray-100">
-          <p className="text-md text-bold text-center font-bold px-2">
+      <div className="flex justify-center gap-2">
+        <div className="flex items-center rounded-full shadow bg-gray-100 dark:bg-gray-500 px-2 gap-1">
+          <TrophyIcon className="h-3 w-3 text-gray-500" />
+          <p className="text-sm text-bold text-center text-gray-500 dark:text-white font-bold">
             {course.credits}
           </p>
         </div>
-        <div className="text-md text-center font-bold border rounded-full shadow bg-gray-100">
-          <p className="text-md text-bold text-center font-bold px-2">
+        <div className="flex items-center rounded-full shadow bg-gray-100 dark:bg-gray-500 px-2 gap-1">
+          <ClockIcon className="h-3 w-3 text-gray-500" />
+          <p className="text-sm text-bold text-center text-gray-500 dark:text-white font-bold">
             {course.period}
           </p>
         </div>
@@ -73,35 +80,46 @@ function Course({ course }: { course: Course }) {
   );
 }
 
-function Substitution({ substitution }: { substitution: Substitution }) {
+function CourseGroup({ courses }: { courses: Course[] }) {
   return (
-    <div key={substitution.id} className="border p-4 rounded shadow">
-      <h2 className="text-xl font-semibold mb-2">
-        Substitution #{substitution.id}
-      </h2>
-      <div>
-        <h3 className="font-medium">Original Courses:</h3>
-        <ul className="list-disc list-inside">
-          {substitution.originalCourses.map((course) => (
-            <Course key={course.id} course={course} />
-          ))}
-        </ul>
-      </div>
-      <div className="mt-2">
-        <h3 className="font-medium">Substitute Courses:</h3>
-        <ul className="list-disc list-inside">
-          {substitution.substituteCourses.map((course) => (
-            <Course key={course.id} course={course} />
-          ))}
-        </ul>
-      </div>
-      <div className="mt-2">
-        <h3 className="font-medium">
-          Interchangeable: {substitution.interchangeable ? "Yes" : "No"}
-        </h3>
-      </div>
+    <div className="flex items-center">
+      {courses.map((course, index) => (
+        <div key={course.id} className="flex items-center">
+          <Course course={course} />
+          {index < courses.length - 1 && (
+            <PlusIcon className="h-4 w-4 rounded-full shadow bg-white dark:bg-gray-500 text-gray-500 dark:text-white -ml-2 -mr-2 z-10" />
+          )}
+        </div>
+      ))}
     </div>
   );
+}
+
+
+function Substitution({ substitution }: { substitution: Substitution }) {
+  if (substitution.interchangeable) {
+    // If the substitution is interchangeable, draw a bidirectional arrow
+    return (
+      <div className="flex items-center">
+        <CourseGroup courses={substitution.substituteCourses} />
+        <ArrowPathIcon className="h-5 w-5 rounded-full bg-green-500 dark:bg-green-600 text-white p-0.5 -ml-2 -mr-2 z-10" />
+        <CourseGroup courses={substitution.originalCourses} />
+      </div>
+    );
+  }
+  else {
+    // If the substitution is not interchangeable, draw a unidirectional arrow
+    return (
+      <div className="flex items-center">
+        <CourseGroup courses={substitution.substituteCourses} />
+        <ArrowDownRightIcon className="h-5 w-5 rounded-full bg-blue-500 dark:bg-blue-600 text-white p-0.5 -ml-2 -mr-2 z-10" />
+        {/* The original courses are displayed in grayscale */}
+        <span className="origin-left scale-90 translate-y-3 -translate-x-3 -z-10 grayscale">
+          <CourseGroup courses={substitution.originalCourses} />
+        </span>
+      </div>
+    );
+  }
 }
 
 export default function Home() {
@@ -119,17 +137,11 @@ export default function Home() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Course Substitutions</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {substitutions && substitutions.length > 0 ? (
-          // Render the list of substitutions
-          substitutions.map((substitution) => (
-            <Substitution key={substitution.id} substitution={substitution} />
-          ))
-        ) : (
-          // Show a message if no substitutions are available
-          <p>No substitutions available.</p>
-        )}
+      <h1 className="text-2xl font-bold mb-4">课程替代关系</h1>
+      <div className="flex flex-wrap gap-10">
+        {substitutions.map((substitution) => (
+          <Substitution key={substitution.id} substitution={substitution} />
+        ))}
       </div>
     </div>
   );
